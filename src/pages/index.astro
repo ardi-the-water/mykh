@@ -1,0 +1,691 @@
+---
+import Layout from '../layouts/Layout.astro';
+import profilePic from '../profile.png';
+import { Image } from 'astro:assets';
+
+let data = [];
+
+function parseCSV(csv) {
+  const lines = csv.trim().split('\n');
+  // Clean up headers, removing quotes and BOM characters
+  const headers = lines.shift().split(',').map(h => h.trim().replace(/"/g, '').replace(/\uFEFF/g, ''));
+  
+  return lines.map(line => {
+    const obj = {};
+    // This regex handles commas inside quoted fields, which is common in CSV
+    const values = line.split(/,(?=(?:(?:[^"]*"){2})*[^"]*$)/);
+    
+    headers.forEach((header, i) => {
+      let value = (values[i] || '').trim();
+      // Remove quotes from start and end of the value
+      if (value.startsWith('"') && value.endsWith('"')) {
+        value = value.slice(1, -1);
+      }
+      // Also handle the case where quotes are escaped with another quote
+      obj[header] = value.replace(/""/g, '"');
+    });
+    return obj;
+  });
+}
+
+try {
+    const response = await fetch('https://docs.google.com/spreadsheets/d/e/2PACX-1vRrSp2-QTxSJrbnisNOld949NtzjRZURm1_UeJbw9VgoYtHZshvzbfyS1B2Ma7cTiknzaq1WJP0na6o/pub?output=csv', { timeout: 5000 });
+    const csv = await response.text();
+    data = parseCSV(csv);
+} catch (error) {
+    console.error("Failed to fetch spreadsheet data:", error);
+}
+
+const allCategories = new Set();
+data.forEach(p => {
+    p['دسته'].split('|').forEach(cat => allCategories.add(cat.trim()));
+});
+---
+<Layout title="علی خداکرمی | توسعه کسب و کار و اتوماسیون">
+  <style>
+    /* General Styles */
+    main {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 0 1rem;
+    }
+
+    section {
+      margin-bottom: 6rem;
+      opacity: 0;
+      transform: translateY(30px);
+      transition: opacity 0.6s ease-out, transform 0.6s ease-out;
+    }
+
+    section.visible {
+      opacity: 1;
+      transform: translateY(0);
+    }
+
+    .section-title {
+        text-align: center;
+        font-size: 2.5rem;
+        margin-bottom: 3rem;
+        color: var(--primary-color);
+        font-weight: 700;
+    }
+
+    .section-title::after {
+        content: '';
+        display: block;
+        width: 60px;
+        height: 4px;
+        background-color: var(--secondary-color);
+        margin: 0.5rem auto 0;
+        border-radius: 2px;
+    }
+
+    /* Hero Section */
+    .hero {
+        text-align: center;
+        padding: 4rem 1rem;
+        min-height: 90vh;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        align-items: center;
+        position: relative;
+        overflow: hidden;
+        border-radius: 16px;
+        background: var(--bg-color);
+    }
+    .hero::before {
+        content: '';
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        width: 800px;
+        height: 800px;
+        background-image: radial-gradient(circle, rgba(100, 255, 218, 0.1) 0%, rgba(100, 255, 218, 0) 60%);
+        transform: translate(-50%, -50%);
+        z-index: 0;
+    }
+    .hero-content {
+        position: relative;
+        z-index: 1;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+    }
+    .profile-pic {
+        width: 150px;
+        height: 150px;
+        border-radius: 50%;
+        border: 5px solid var(--primary-color);
+        object-fit: cover;
+        margin-bottom: 1.5rem;
+        box-shadow: 0 0 30px rgba(100, 255, 218, 0.4);
+    }
+    .hero h1 {
+        font-size: 3.5rem;
+        color: var(--text-color);
+        margin: 0;
+        font-weight: 900;
+    }
+    .hero h1 span {
+        color: var(--primary-color);
+    }
+    .hero .subtitle {
+        font-size: 1.5rem;
+        margin-top: 1rem;
+        color: var(--text-color);
+        opacity: 0.8;
+        max-width: 700px;
+    }
+    .hero-cta {
+        margin-top: 2.5rem;
+        padding: 1rem 2.5rem;
+        background-color: var(--primary-color);
+        color: #0a192f;
+        border: none;
+        border-radius: 8px;
+        font-size: 1.2rem;
+        font-weight: bold;
+        cursor: pointer;
+        transition: transform 0.3s, box-shadow 0.3s;
+        text-decoration: none;
+    }
+    .hero-cta:hover {
+        transform: translateY(-3px);
+        box-shadow: 0 10px 20px rgba(100, 255, 218, 0.2);
+    }
+
+    /* Features Section */
+    .features-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+        gap: 2rem;
+        justify-items: center; /* Center cards in the grid cells */
+    }
+
+    .features-grid .card {
+      width: 100%; /* Make it responsive */
+      max-width: 300px; /* Max-width for larger screens */
+      min-height: 254px; /* Keep a minimum height */
+      background: #171717;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      overflow: hidden;
+      position: relative;
+      box-shadow: 0px 0px 3px 1px #00000088;
+      cursor: pointer;
+      border-radius: 5px;
+    }
+
+    .features-grid .card .content {
+      border-radius: 5px;
+      background: #171717;
+      width: calc(100% - 4px); /* Adjust for border effect */
+      height: calc(100% - 4px); /* Adjust for border effect */
+      z-index: 1;
+      padding: 20px;
+      color: white;
+      display: flex;
+      flex-direction: column; /* Align content vertically */
+      justify-content: center;
+      align-items: center;
+      text-align: center;
+    }
+
+    .features-grid .content::before {
+      opacity: 0;
+      transition: opacity 300ms;
+      content: " ";
+      display: block;
+      background: white;
+      width: 5px;
+      height: 50px;
+      position: absolute;
+      filter: blur(50px);
+      overflow: hidden;
+    }
+
+    .features-grid .card:hover .content::before {
+      opacity: 1;
+    }
+
+    .features-grid .card::before {
+      opacity: 0;
+      content: " ";
+      position: absolute;
+      display: block;
+      width: 80px;
+      height: 360px;
+      background: linear-gradient(var(--primary-color), var(--secondary-color));
+      transition: opacity 300ms;
+      animation: rotation_9018 8000ms infinite linear;
+      animation-play-state: paused;
+    }
+
+    .features-grid .card:hover::before {
+      opacity: 1;
+      animation-play-state: running;
+    }
+
+    .features-grid .card::after {
+      position: absolute;
+      content: " ";
+      display: block;
+      width: 100%;
+      height: 100%;
+      background: #17171733;
+      backdrop-filter: blur(50px);
+    }
+
+    @keyframes rotation_9018 {
+      0% {
+        transform: rotate(0deg);
+      }
+
+      100% {
+        transform: rotate(360deg);
+      }
+    }
+
+    .feature-icon {
+        font-size: 3rem;
+        color: var(--primary-color);
+        margin-bottom: 1rem;
+    }
+    .features-grid .card h3 {
+        font-size: 1.5rem;
+        margin-bottom: 0.5rem;
+        color: var(--text-color);
+    }
+    .features-grid .card p {
+        opacity: 0.8;
+    }
+
+    /* Workflow Section */
+    .workflow-steps {
+        display: flex;
+        justify-content: space-between;
+        position: relative;
+        gap: 2rem;
+    }
+    .workflow-steps::before {
+        content: '';
+        position: absolute;
+        top: 30px;
+        right: 5%;
+        left: 5%;
+        height: 2px;
+        background: repeating-linear-gradient(90deg, var(--primary-color), var(--primary-color) 6px, transparent 6px, transparent 12px);
+        z-index: -1;
+    }
+    .workflow-step {
+        flex: 1;
+        text-align: center;
+        max-width: 300px;
+    }
+    .step-number {
+        width: 60px;
+        height: 60px;
+        border-radius: 50%;
+        background: var(--card-bg);
+        border: 2px solid var(--primary-color);
+        color: var(--primary-color);
+        display: inline-flex;
+        justify-content: center;
+        align-items: center;
+        font-size: 1.8rem;
+        font-weight: bold;
+        margin-bottom: 1rem;
+    }
+    .workflow-step h3 {
+        font-size: 1.3rem;
+        margin-bottom: 0.5rem;
+    }
+
+    /* Products Section */
+    .filters-wrapper {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 1.5rem;
+        margin-bottom: 2rem;
+        position: relative;
+        z-index: 10;
+    }
+    .search-container {
+        width: 100%;
+        max-width: 400px;
+    }
+    .search-input {
+        width: 100%;
+        padding: 0.75rem 1rem;
+        background-color: var(--card-bg);
+        border: 1px solid rgba(100, 255, 218, 0.2);
+        border-radius: 8px;
+        color: var(--text-color);
+        font-family: inherit;
+        font-size: 1rem;
+        transition: border-color 0.3s, box-shadow 0.3s;
+    }
+    .search-input:focus {
+        outline: none;
+        border-color: var(--primary-color);
+        box-shadow: 0 0 10px rgba(100, 255, 218, 0.2);
+    }
+    .filter-container {
+      text-align: center;
+    }
+    .filter-btn {
+      background: none;
+      border: 1px solid var(--primary-color);
+      color: var(--primary-color);
+      border-radius: 16px;
+      padding: 0.5rem 1rem;
+      margin: 0 0.5rem;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      font-family: inherit;
+    }
+    .filter-btn.active, .filter-btn:hover {
+      background-color: var(--primary-color);
+      color: var(--bg-color);
+    }
+    .card-container {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+      gap: 2rem;
+    }
+    .card {
+      background-color: var(--card-bg);
+      border-radius: 16px;
+      overflow: hidden;
+      border: 1px solid rgba(100, 255, 218, 0.1);
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
+      transition: all 0.3s ease;
+      display: flex;
+      flex-direction: column;
+      text-decoration: none;
+      color: var(--text-color);
+    }
+    .card.hidden {
+        display: none;
+    }
+    .card:hover {
+      transform: translateY(-5px);
+      box-shadow: 0 8px 25px rgba(0,0,0,0.3);
+    }
+    .card img {
+      width: 100%;
+      height: 200px;
+      object-fit: cover;
+    }
+    .card-content {
+      padding: 1.5rem;
+      display: flex;
+      flex-direction: column;
+      flex-grow: 1;
+    }
+    .card h2 {
+      font-size: 1.5rem;
+      margin: 0 0 0.5rem 0;
+      color: var(--primary-color);
+    }
+    .card .price {
+        font-size: 1.1rem;
+        font-weight: 600;
+        color: var(--secondary-color);
+        margin-bottom: 1rem;
+    }
+    .card p {
+      font-size: 1rem;
+      margin: 0 0 1.5rem 0;
+      flex-grow: 1;
+      opacity: 0.8;
+    }
+
+    .hashtags-container {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.5rem;
+        margin-top: auto; /* Pushes hashtags to the bottom */
+        padding-top: 1rem;
+    }
+
+    .hashtag {
+        background-color: rgba(100, 255, 218, 0.1);
+        color: var(--primary-color);
+        padding: 0.25rem 0.75rem;
+        border-radius: 12px;
+        font-size: 0.8rem;
+        font-weight: 500;
+    }
+
+    /* CTA Section */
+    .cta-section {
+        background-color: var(--card-bg);
+        background-image: url('data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" width="40" height="40" viewBox="0 0 40 40"%3E%3Cg fill-rule="evenodd"%3E%3Cg fill="%2364ffda" fill-opacity="0.05"%3E%3Cpath d="M0 38.59l2.83-2.83 1.41 1.41L1.41 40H0v-1.41zM0 1.4l2.83 2.83 1.41-1.41L1.41 0H0v1.41zM38.59 40l-2.83-2.83 1.41-1.41L40 38.59V40h-1.41zM40 1.41l-2.83 2.83-1.41-1.41L38.59 0H40v1.41zM20 18.6l2.83-2.83 1.41 1.41L21.41 20l2.83 2.83-1.41 1.41L20 21.41l-2.83 2.83-1.41-1.41L18.59 20l-2.83-2.83 1.41-1.41L20 18.59z"/%3E%3C/g%3E%3C/g%3E%3C/svg%3E');
+        padding: 4rem 2rem;
+        border-radius: 16px;
+        text-align: center;
+        border: 1px solid rgba(100, 255, 218, 0.2);
+        transition: transform 0.3s, box-shadow 0.3s;
+    }
+    .cta-section:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 10px 25px rgba(0,0,0,0.3);
+    }
+    .cta-section h2 {
+        font-size: 2.5rem;
+        margin: 0 0 1rem 0;
+        font-weight: 900;
+        color: var(--text-color);
+    }
+    .cta-section p {
+        font-size: 1.2rem;
+        margin-bottom: 2rem;
+        opacity: 0.8;
+        color: var(--text-color);
+    }
+    .cta-button {
+        padding: 1rem 2.5rem;
+        background-color: var(--primary-color);
+        color: #0a192f;
+        border: none;
+        border-radius: 8px;
+        font-size: 1.2rem;
+        font-weight: bold;
+        cursor: pointer;
+        transition: transform 0.3s, box-shadow 0.3s;
+        text-decoration: none;
+    }
+    .cta-button:hover {
+        transform: scale(1.05) translateY(-2px);
+        box-shadow: 0 8px 15px rgba(100, 255, 218, 0.2);
+    }
+
+    /* Popup Styles */
+    .popup-overlay {
+        position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+        background-color: rgba(0,0,0,0.7); backdrop-filter: blur(5px);
+        display: flex; justify-content: center; align-items: center;
+        z-index: 1000; opacity: 0; visibility: hidden;
+        transition: opacity 0.3s, visibility 0.3s;
+    }
+    .popup-overlay.show { opacity: 1; visibility: visible; }
+    .popup {
+        background: var(--card-bg); padding: 2rem; border-radius: 16px;
+        text-align: center; max-width: 500px; transform: scale(0.9);
+        transition: transform 0.3s;
+    }
+    .popup-overlay.show .popup { transform: scale(1); }
+    .popup h2 { font-size: 2rem; color: var(--primary-color); margin-bottom: 1rem; }
+    .popup p { font-size: 1.2rem; margin-bottom: 2rem; }
+    .popup-close {
+        background-color: var(--primary-color); color: var(--bg-color);
+        border: none; padding: 0.75rem 1.5rem; border-radius: 8px;
+        cursor: pointer; font-size: 1rem;
+        font-family: inherit;
+    }
+
+    /* Responsive Styles */
+    @media (max-width: 768px) {
+        section { margin-bottom: 4rem; }
+        .hero { padding: 4rem 1rem; min-height: 70vh; }
+        .hero h1 { font-size: 2.5rem; }
+        .hero .subtitle { font-size: 1.2rem; }
+        .profile-pic { width: 120px; height: 120px; }
+        .section-title { font-size: 2rem; }
+        .workflow-steps {
+            flex-direction: column;
+            gap: 3rem;
+            align-items: center;
+        }
+        .workflow-steps::before { display: none; }
+        .filter-container {
+            overflow-x: auto; white-space: nowrap;
+            padding-bottom: 1rem; -ms-overflow-style: none; scrollbar-width: none;
+        }
+        .filter-container::-webkit-scrollbar { display: none; }
+        .filter-btn { flex-shrink: 0; }
+        .cta-section { padding: 3rem 1.5rem; }
+        .cta-section h2 { font-size: 2rem; }
+    }
+  </style>
+
+  <div class="popup-overlay" id="entry-popup">
+    <div class="popup">
+      <h2>🚀 جایی که کسب و کارت یه قدم عالی بر میداره 🚀</h2>
+      <p>از اول تا آخر مسیر باهاتم. با من، علی خداکرمی در چالوس | اولین آژانس سرویس های اتوماسیون و برنامه نویسی</p>
+      <button class="popup-close">بزن بریم!</button>
+    </div>
+  </div>
+
+  <main>
+    <section class="hero">
+      <div class="hero-content">
+        <Image src={profilePic} alt="علی خداکرمی" width={240} height={240} class="profile-pic" />
+        <h1>سلام، من <span>علی خداکرمی</span> هستم</h1>
+        <p class="subtitle">توسعه‌دهنده کسب‌وکار و متخصص اتوماسیون، برای ساختن آینده‌ای هوشمندتر برای کسب‌وکار شما.</p>
+        <a href="#products" class="hero-cta">مشاهده خدمات</a>
+      </div>
+    </section>
+
+    <section class="features animated-section">
+        <h2 class="section-title">چرا ما؟</h2>
+        <div class="features-grid">
+            <div class="card">
+                <div class="content">
+                    <div class="feature-icon">💡</div>
+                    <h3>راهکارهای نوآورانه</h3>
+                    <p>ارائه جدیدترین تکنولوژی‌ها و راهکارهای خلاقانه برای حل چالش‌های کسب‌وکار شما.</p>
+                </div>
+            </div>
+            <div class="card">
+                <div class="content">
+                    <div class="feature-icon">📈</div>
+                    <h3>رشد تضمینی</h3>
+                    <p>با اتوماسیون فرآیندها و بهینه‌سازی عملکرد، به رشد پایدار و قابل اندازه‌گیری دست یابید.</p>
+                </div>
+            </div>
+            <div class="card">
+                <div class="content">
+                    <div class="feature-icon">🤝</div>
+                    <h3>پشتیبانی کامل</h3>
+                    <p>از مشاوره اولیه تا پیاده‌سازی و پشتیبانی، در تمام مراحل مسیر همراه شما هستیم.</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <section class="workflow animated-section">
+        <h2 class="section-title">مسیر همکاری ما</h2>
+        <div class="workflow-steps">
+            <div class="workflow-step">
+                <div class="step-number">۱</div>
+                <h3>کشف و تحلیل</h3>
+                <p>نیازها و اهداف شما را به دقت بررسی می‌کنیم.</p>
+            </div>
+            <div class="workflow-step">
+                <div class="step-number">۲</div>
+                <h3>طراحی و اجرا</h3>
+                <p>راهکار اختصاصی شما را طراحی و پیاده‌سازی می‌کنیم.</p>
+            </div>
+            <div class="workflow-step">
+                <div class="step-number">۳</div>
+                <h3>بهینه‌سازی و رشد</h3>
+                <p>نتایج را تحلیل کرده و برای بهبود مستمر تلاش می‌کنیم.</p>
+            </div>
+        </div>
+    </section>
+
+    <section id="products" class="products animated-section">
+        <h2 class="section-title">خدمات و محصولات</h2>
+        <div class="filters-wrapper">
+            <div class="search-container">
+                <input type="search" id="search-input" class="search-input" placeholder="جستجو در خدمات..." />
+            </div>
+            <div class="filter-container">
+              <button class="filter-btn active" data-category="all">همه</button>
+              {Array.from(allCategories).map(category => (
+                <button class="filter-btn" data-category={category}>{category}</button>
+              ))}
+            </div>
+        </div>
+        <div class="card-container">
+          {data.map(product => (
+            <div class="card" data-url={`/products/${product['شماره محصول']}`} data-categories={product['دسته'].split('|').map(c => c.trim()).join(' ')}>
+              <img src={product['لینک تصویر']} alt={product['نام']} loading="lazy" />
+              <div class="card-content">
+                <h2>{product['نام']}</h2>
+                <p class="price">{parseInt(product['قیمت ماهانه']).toLocaleString('fa-IR')} تومان / ماهانه</p>
+                <p>{product['توضیحات']}</p>
+                {product['هشتگ ها'] && (
+                  <div class="hashtags-container">
+                    {product['هشتگ ها'].split(',').map(tag => (
+                      <span class="hashtag">{tag.trim()}</span>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </div>
+          ))}
+        </div>
+    </section>
+
+    <section class="cta-section animated-section">
+        <h2>آماده تحول کسب‌وکارتان هستید؟</h2>
+        <p>بیایید با یک مشاوره رایگان شروع کنیم و ببینیم چگونه می‌توانیم به شما کمک کنیم.</p>
+        <a href="https://yek.link/khodakarami.a" target="_blank" class="cta-button">شروع کنیم</a>
+    </section>
+  </main>
+
+  <script is:inline>
+    // Scroll Animation Logic
+    const animatedSections = document.querySelectorAll('.animated-section, .hero');
+    const observer = new IntersectionObserver((entries) => {
+        entries.forEach(entry => {
+            if (entry.isIntersecting) {
+                entry.target.classList.add('visible');
+                observer.unobserve(entry.target);
+            }
+        });
+    }, {
+        threshold: 0.1
+    });
+    animatedSections.forEach(section => {
+        observer.observe(section);
+    });
+
+    // Combined Filter and Search Logic
+    document.addEventListener('DOMContentLoaded', () => {
+        const filterButtons = document.querySelectorAll('.filter-btn');
+        const searchInput = document.getElementById('search-input');
+        const cards = document.querySelectorAll('.card-container .card');
+        let activeCategory = 'all';
+        let searchTerm = '';
+
+        function filterAndSearch() {
+            cards.forEach(card => {
+                const cardCategories = card.dataset.categories;
+                const cardText = card.textContent.toLowerCase();
+
+                const categoryMatch = activeCategory === 'all' || cardCategories.includes(activeCategory);
+                const searchMatch = searchTerm === '' || cardText.includes(searchTerm);
+
+                if (categoryMatch && searchMatch) {
+                    card.classList.remove('hidden');
+                } else {
+                    card.classList.add('hidden');
+                }
+            });
+        }
+
+        filterButtons.forEach(button => {
+            button.addEventListener('click', (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                
+                filterButtons.forEach(btn => btn.classList.remove('active'));
+                button.classList.add('active');
+
+                activeCategory = button.dataset.category;
+                filterAndSearch();
+            });
+        });
+
+        searchInput.addEventListener('input', (e) => {
+            searchTerm = e.target.value.toLowerCase();
+            filterAndSearch();
+        });
+
+        // Add click listener for product cards
+        const productCards = document.querySelectorAll('.card-container .card');
+        productCards.forEach(card => {
+            card.addEventListener('click', () => {
+                window.location.href = card.dataset.url;
+            });
+        });
+    });
+  </script>
+</Layout>
