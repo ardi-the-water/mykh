@@ -594,7 +594,7 @@ data.forEach(p => {
         </div>
         <div class="card-container">
           {data.map(product => (
-            <div class="card" data-url={`/products/${product['شماره محصول']}`} data-categories={product['دسته'].split('|').map(c => c.trim()).join(' ')}>
+<div class="card" data-url={`${import.meta.env.BASE_URL}products/${product['شماره محصول']}`} data-categories={product['دسته'].split('|').map(c => c.trim()).join(' ')}>
               <img src={product['لینک تصویر']} alt={product['نام']} loading="lazy" />
               <div class="card-content">
                 <h2>{product['نام']}</h2>
