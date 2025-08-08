@@ -1,26 +1,26 @@
 ---
 import Layout from '../../layouts/Layout.astro';
 
-function parseCSV(csv) {
-  const lines = csv.trim().split('\n');
-  const headers = lines.shift().split(',').map(h => h.trim().replace(/"/g, '').replace(/\uFEFF/g, ''));
-  
-  return lines.map(line => {
-    const obj = {};
-    const values = line.split(/,(?=(?:(?:[^"]*"){2})*[^"]*$)/);
-    
-    headers.forEach((header, i) => {
-      let value = (values[i] || '').trim();
-      if (value.startsWith('"') && value.endsWith('"')) {
-        value = value.slice(1, -1);
-      }
-      obj[header] = value.replace(/""/g, '"');
-    });
-    return obj;
-  });
-}
-
 export async function getStaticPaths() {
+  function parseCSV(csv) {
+    const lines = csv.trim().split('\n');
+    const headers = lines.shift().split(',').map(h => h.trim().replace(/"/g, '').replace(/\uFEFF/g, ''));
+    
+    return lines.map(line => {
+      const obj = {};
+      const values = line.split(/,(?=(?:(?:[^"]*"){2})*[^"]*$)/);
+      
+      headers.forEach((header, i) => {
+        let value = (values[i] || '').trim();
+        if (value.startsWith('"') && value.endsWith('"')) {
+          value = value.slice(1, -1);
+        }
+        obj[header] = value.replace(/""/g, '"');
+      });
+      return obj;
+    });
+  }
+
   const response = await fetch('https://docs.google.com/spreadsheets/d/e/2PACX-1vRrSp2-QTxSJrbnisNOld949NtzjRZURm1_UeJbw9VgoYtHZshvzbfyS1B2Ma7cTiknzaq1WJP0na6o/pub?output=csv');
   const csv = await response.text();
   const products = parseCSV(csv);
